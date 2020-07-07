@@ -1,0 +1,4 @@
+applications:
+  - name: nodeserver
+    random-route: true
+    memory: 64M
