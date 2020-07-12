@@ -1,55 +1,52 @@
-//requires
+require('dotenv').config();
 const express = require("express");
+const http = require("http");
 const app = express();
-var http = require("http").Server(app);
-var io = require("socket.io")(http);
+const server = http.createServer(app);
+const socket = require("socket.io");
+const io = socket(server);
 
-const port = process.env.PORT || 3000;
+const users = {};
 
-// express routing
-app.use(express.static("public"));
+const socketToRoom = {};
 
-// signaling
-io.on("connection", function(socket) {
-  console.log("a user connected");
+io.on('connection', socket => {
+    socket.on("join room", roomID => {
+        if (users[roomID]) {
+            const length = users[roomID].length;
+            if (length === 4) {
+                socket.emit("room full");
+                return;
+            }
+            users[roomID].push(socket.id);
+        } else {
+            users[roomID] = [socket.id];
+        }
+        socketToRoom[socket.id] = roomID;
+        const usersInThisRoom = users[roomID].filter(id => id !== socket.id);
 
-  socket.on("create or join", function(room) {
-    console.log("create or join to room ", room);
+        socket.emit("all users", usersInThisRoom);
+    });
 
-    var myRoom = io.sockets.adapter.rooms[room] || { length: 0 };
-    var numClients = myRoom.length;
+    socket.on("sending signal", payload => {
+        io.to(payload.userToSignal).emit('user joined', { signal: payload.signal, callerID: payload.callerID });
+    });
 
-    console.log(room, " has ", numClients, " clients");
+    socket.on("returning signal", payload => {
+        io.to(payload.callerID).emit('receiving returned signal', { signal: payload.signal, id: socket.id });
+    });
 
-    if (numClients == 0) {
-      socket.join(room);
-      socket.emit("created", room);
-    } else if (numClients == 1) {
-      socket.join(room);
-      socket.emit("joined", room);
-    } else {
-      socket.emit("full", room);
-    }
-  });
+    socket.on('disconnect', () => {
+        const roomID = socketToRoom[socket.id];
+        let room = users[roomID];
+        if (room) {
+            room = room.filter(id => id !== socket.id);
+            users[roomID] = room;
+        }
+    });
 
-  socket.on("ready", function(room) {
-    socket.broadcast.to(room).emit("ready");
-  });
-
-  socket.on("candidate", function(event) {
-    socket.broadcast.to(event.room).emit("candidate", event);
-  });
-
-  socket.on("offer", function(event) {
-    socket.broadcast.to(event.room).emit("offer", event.sdp);
-  });
-
-  socket.on("answer", function(event) {
-    socket.broadcast.to(event.room).emit("answer", event.sdp);
-  });
 });
 
-// listener
-http.listen(port || 3000, function() {
-  console.log("listening on", port);
-});
+server.listen(process.env.PORT || 8000, () => console.log('server is running on port 8000'));
+
+
