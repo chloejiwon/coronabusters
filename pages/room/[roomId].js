@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { connect } from "react-redux";
+import { withRouter } from "next/router";
 import io from "socket.io-client";
 import Peer from "simple-peer";
 import styled from "styled-components";
@@ -40,27 +42,29 @@ const Video = props => {
   return <StyledVideo playsInline autoPlay ref={ref} />;
 };
 
-const videoConstraints = {
-  height: window.innerHeight / 2,
-  width: window.innerWidth / 2
-};
+var streamConstraints = { audio: true, video: true };
 
 const Room = props => {
+  const { dispatch, pokeNo, pokeData, router } = props;
+  const { query } = router;
+  const { roomId } = query;
+
   const [peers, setPeers] = useState([]);
   const socketRef = useRef();
   const userVideo = useRef();
   const peersRef = useRef([]);
-  const roomID = props.match.params.roomID;
+
   const canvasRef = useRef();
 
   useEffect(() => {
-    socketRef.current = io.connect("/");
+    socketRef.current = io.connect("http://localhost:8000");
     const webCamPromise = navigator.mediaDevices
-      .getUserMedia({ video: videoConstraints, audio: true })
+      .getUserMedia(streamConstraints)
       .then(stream => {
         userVideo.current.srcObject = stream;
         console.log("Got local user video");
-        socketRef.current.emit("join room", roomID);
+
+        socketRef.current.emit("join room", roomId);
         socketRef.current.on("all users", users => {
           const peers = [];
           users.forEach(userID => {
@@ -88,6 +92,7 @@ const Room = props => {
           const item = peersRef.current.find(p => p.peerID === payload.id);
           item.peer.signal(payload.signal);
         });
+
         return new Promise((resolve, reject) => {
           userVideo.current.onloadedmetadata = () => {
             resolve();
@@ -173,4 +178,7 @@ const Room = props => {
   );
 };
 
-export default Room;
+export default connect(({ pokeReducer }) => ({
+  pokeNo: pokeReducer.get("pokeNo"),
+  pokeData: pokeReducer.get("pokeData")
+}))(withRouter(Room));
