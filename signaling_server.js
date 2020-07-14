@@ -12,7 +12,7 @@ const socketToRoom = {};
 io.on("connection", socket => {
   console.log("connection occured");
   socket.on("join room", roomID => {
-    console.log("joined the room!");
+    console.log("joined the room!", roomID);
     if (users[roomID]) {
       const length = users[roomID].length;
       if (length === 4) {
