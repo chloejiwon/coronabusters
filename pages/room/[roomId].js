@@ -146,9 +146,9 @@ const Room = props => {
   }
 
   function detectFrame(video, model, canvasRef) {
-    //console.log("Detect Frame ");
+    console.log("Detect Frame ");
     model.detect(video).then(predictions => {
-      //console.log(predictions);
+      console.log(predictions);
       renderPredictions(predictions, canvasRef);
       requestAnimationFrame(() => {
         detectFrame(video, model);
@@ -157,7 +157,7 @@ const Room = props => {
   }
 
   function renderPredictions(predictions, canvasRef) {
-    //console.log(predictions, canvasRef);
+    console.log(predictions, canvasRef);
   }
 
   return (
