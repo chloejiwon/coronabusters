@@ -45,6 +45,7 @@ const Video = props => {
 var streamConstraints = { audio: true, video: true };
 
 const Room = props => {
+  let count = 0;
   const { dispatch, pokeNo, pokeData, router } = props;
   const { query } = router;
   const { roomId } = query;
@@ -145,19 +146,53 @@ const Room = props => {
     return peer;
   }
 
-  function detectFrame(video, model, canvasRef) {
-    console.log("Detect Frame ");
-    model.detect(video).then(predictions => {
-      console.log(predictions);
-      renderPredictions(predictions, canvasRef);
-      requestAnimationFrame(() => {
-        detectFrame(video, model);
+  function detectFrame(video, model, canvas) {
+    count = (count + 1) % 120;
+    console.log("count is being countee!", count);
+
+    if (count % 120 == 0) {
+      console.log("Detect Frame ");
+      model.detect(video).then(predictions => {
+        console.log(predictions);
+        renderPredictions(predictions, canvas);
       });
+    }
+    requestAnimationFrame(() => {
+      detectFrame(video, model);
     });
   }
 
-  function renderPredictions(predictions, canvasRef) {
-    console.log(predictions, canvasRef);
+  function renderPredictions(predictions, canvas) {
+    console.log(predictions);
+    /*   const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Font options.
+    const font = "16px sans-serif";
+    ctx.font = font;
+    ctx.textBaseline = "top";
+    predictions.forEach(prediction => {
+      const x = prediction.bbox[0];
+      const y = prediction.bbox[1];
+      const width = prediction.bbox[2];
+      const height = prediction.bbox[3];
+      // Draw the bounding box.
+      ctx.strokeStyle = "#00FFFF";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, y, width, height);
+      // Draw the label background.
+      ctx.fillStyle = "#00FFFF";
+      const textWidth = ctx.measureText(prediction.class).width;
+      const textHeight = parseInt(font, 10); // base 10
+      ctx.fillRect(x, y, textWidth + 4, textHeight + 4);
+    });
+
+    predictions.forEach(prediction => {
+      const x = prediction.bbox[0];
+      const y = prediction.bbox[1];
+      // Draw the text last to ensure it's on top.
+      ctx.fillStyle = "#000000";
+      ctx.fillText(prediction.class, x, y);
+    });*/
   }
 
   return (

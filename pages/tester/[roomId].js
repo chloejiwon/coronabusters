@@ -5,9 +5,6 @@ import io from "socket.io-client";
 import Peer from "simple-peer";
 import styled from "styled-components";
 
-import * as cocoSsd from "@tensorflow-models/coco-ssd";
-import "@tensorflow/tfjs";
-
 const Container = styled.div`
   padding: 20px;
   display: flex;
@@ -57,58 +54,38 @@ const Room = props => {
   const canvasRef = useRef();
 
   useEffect(() => {
-    socketRef.current = io.connect("http://localhost:8000");
-    const webCamPromise = navigator.mediaDevices
-      .getUserMedia(streamConstraints)
-      .then(stream => {
-        userVideo.current.srcObject = stream;
-        console.log("Got local user video");
-
-        socketRef.current.emit("tester join room", roomId);
-        socketRef.current.on("all users", users => {
-          const peers = [];
-          users.forEach(userID => {
-            const peer = createPeer(userID, socketRef.current.id, stream);
-            peersRef.current.push({
-              peerID: userID,
-              peer
-            });
-            peers.push(peer);
-          });
-          setPeers(peers);
-        });
-
-        socketRef.current.on("user joined", payload => {
-          const peer = addPeer(payload.signal, payload.callerID, stream);
+    socketRef.current = io.connect("localhost:8000");
+    navigator.mediaDevices.getUserMedia(streamConstraints).then(stream => {
+      userVideo.current.srcObject = stream;
+      socketRef.current.emit("tester join room", roomId);
+      socketRef.current.on("all users", users => {
+        const peers = [];
+        users.forEach(userID => {
+          const peer = createPeer(userID, socketRef.current.id, stream);
           peersRef.current.push({
-            peerID: payload.callerID,
+            peerID: userID,
             peer
           });
-
-          setPeers(users => [...users, peer]);
+          peers.push(peer);
         });
-
-        socketRef.current.on("receiving returned signal", payload => {
-          const item = peersRef.current.find(p => p.peerID === payload.id);
-          item.peer.signal(payload.signal);
-        });
-
-        return new Promise((resolve, reject) => {
-          userVideo.current.onloadedmetadata = () => {
-            resolve();
-          };
-        });
+        setPeers(peers);
       });
 
-    const modelPromise = cocoSsd.load();
-    Promise.all([modelPromise, webCamPromise])
-      .then(values => {
-        console.log(values);
-        detectFrame(userVideo.current, values[0], canvasRef.current);
-      })
-      .catch(error => {
-        console.error(error);
+      socketRef.current.on("user joined", payload => {
+        const peer = addPeer(payload.signal, payload.callerID, stream);
+        peersRef.current.push({
+          peerID: payload.callerID,
+          peer
+        });
+
+        setPeers(users => [...users, peer]);
       });
+
+      socketRef.current.on("receiving returned signal", payload => {
+        const item = peersRef.current.find(p => p.peerID === payload.id);
+        item.peer.signal(payload.signal);
+      });
+    });
   }, []);
 
   function createPeer(userToSignal, callerID, stream) {
@@ -145,32 +122,9 @@ const Room = props => {
     return peer;
   }
 
-  function detectFrame(video, model, canvasRef) {
-    console.log("Detect Frame ");
-    model.detect(video).then(predictions => {
-      console.log(predictions);
-      renderPredictions(predictions, canvasRef);
-      requestAnimationFrame(() => {
-        detectFrame(video, model);
-      });
-    });
-  }
-
-  function renderPredictions(predictions, canvasRef) {
-    console.log(predictions, canvasRef);
-  }
-
   return (
     <Container>
-      <StyledVideo
-        muted
-        ref={userVideo}
-        autoPlay
-        playsInline
-        width="600"
-        height="500"
-      />
-      <StyledCanvas className="size" ref={canvasRef} width="600" height="500" />
+      <StyledVideo muted ref={userVideo} autoPlay playsInline />
       {peers.map((peer, index) => {
         return <Video key={index} peer={peer} />;
       })}

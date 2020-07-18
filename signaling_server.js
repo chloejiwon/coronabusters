@@ -19,6 +19,7 @@ io.on("connection", socket => {
     if (testers[roomID]) {
       const length = testers[roomID].length;
       if (length === 4) {
+        console.log("Tester room full");
         socket.emit("room full");
         return;
       }
@@ -40,6 +41,7 @@ io.on("connection", socket => {
     if (testees[roomID]) {
       const length = testees[roomID].length;
       if (length === 4) {
+        console.log("User room full");
         socket.emit("room full");
         return;
       }
@@ -50,9 +52,11 @@ io.on("connection", socket => {
       users[roomID] = [socket.id];
     }
     socketToRoom[socket.id] = roomID;
-    const testersInThisRoom = testers[roomID].filter(id => id !== socket.id);
+    if (testers[roomID]) {
+      const testersInThisRoom = testers[roomID].filter(id => id !== socket.id);
 
-    socket.emit("all testers", testersInThisRoom);
+      socket.emit("all testers", testersInThisRoom);
+    }
   });
 
   socket.on("sending signal", payload => {
