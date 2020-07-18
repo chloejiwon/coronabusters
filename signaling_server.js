@@ -16,46 +16,62 @@ io.on("connection", socket => {
   // make p2p connection with everybody in the room
   socket.on("tester join room", roomID => {
     console.log("Tester has joined the room!", roomID);
-    if (testers[roomID]) {
+
+    if (users[roomID]) {
       const length = testers[roomID].length;
       if (length === 4) {
         console.log("Tester room full");
         socket.emit("room full");
         return;
       }
-      testers[roomID].push(socket.id);
+
       users[roomID].push(socket.id);
     } else {
-      testers[roomID] = [socket.id];
       users[roomID] = [socket.id];
     }
-    socketToRoom[socket.id] = roomID;
-    const usersInThisRoom = users[roomID].filter(id => id !== socket.id);
 
+    if (testers[roomID]) {
+      testers[roomID].push(socket.id);
+    } else {
+      testers[roomID] = [socket.id];
+    }
+
+    socketToRoom[socket.id] = roomID;
+    console.log(users[roomID], roomID, socket.id);
+    const usersInThisRoom = users[roomID].filter(id => id !== socket.id);
+    console.log("users in this room:", usersInThisRoom);
     socket.emit("all users", usersInThisRoom);
   });
   // testee has joined the room
   // only make p2p connection with testers
   socket.on("join room", roomID => {
     console.log("User has joined the room!", roomID);
-    if (testees[roomID]) {
-      const length = testees[roomID].length;
+
+    if (users[roomID]) {
+      const length = testers[roomID].length;
       if (length === 4) {
-        console.log("User room full");
+        console.log("Tester room full");
         socket.emit("room full");
         return;
       }
-      testees[roomID].push(socket.id);
+
       users[roomID].push(socket.id);
     } else {
-      testees[roomID] = [socket.id];
       users[roomID] = [socket.id];
     }
+
+    if (testees[roomID]) {
+      testees[roomID].push(socket.id);
+    } else {
+      testees[roomID] = [socket.id];
+    }
+    console.log(users[roomID], roomID, socket.id);
     socketToRoom[socket.id] = roomID;
     if (testers[roomID]) {
       const testersInThisRoom = testers[roomID].filter(id => id !== socket.id);
-
       socket.emit("all testers", testersInThisRoom);
+    } else {
+      socket.emit("all testers", []);
     }
   });
 
