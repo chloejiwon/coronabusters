@@ -146,7 +146,6 @@ const Room = props => {
 
   function detectFrame(video, model) {
     count = (count + 1) % 120;
-    console.log("count is being countee!", count);
 
     if (count % 120 == 0) {
       console.log("Detect Frame ");
@@ -161,7 +160,7 @@ const Room = props => {
   }
 
   function renderPredictions(predictions) {
-    console.log(predictions);
+    console.log(JSON.stringify(predictions));
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
