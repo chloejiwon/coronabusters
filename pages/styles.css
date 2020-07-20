@@ -1,0 +1,13 @@
+.local {
+  position: relative;
+}
+.size {
+  position: fixed;
+  top: 150;
+  left: 150;
+}
+.local-detect {
+  position: absolute;
+  top: 0;
+  left: -100;
+}

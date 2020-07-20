@@ -18,9 +18,9 @@ io.on("connection", socket => {
     console.log("Tester has joined the room!", roomID);
 
     if (users[roomID]) {
-      const length = testers[roomID].length;
+      const length = users[roomID].length;
       if (length === 4) {
-        console.log("Tester room full");
+        console.log("users room full");
         socket.emit("room full");
         return;
       }
@@ -48,9 +48,9 @@ io.on("connection", socket => {
     console.log("User has joined the room!", roomID);
 
     if (users[roomID]) {
-      const length = testers[roomID].length;
+      const length = users[roomID].length;
       if (length === 4) {
-        console.log("Tester room full");
+        console.log("users room full");
         socket.emit("room full");
         return;
       }

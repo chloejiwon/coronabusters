@@ -23,11 +23,9 @@ const StyledVideo = styled.video`
 `;
 
 const StyledCanvas = styled.canvas`
-  position: fixed;
+  position: absolute;
   top: 0;
-  left: 0;
-  height: 500px;
-  width: 600px;
+  right: 0;
 `;
 
 const Video = props => {
@@ -105,7 +103,7 @@ const Room = props => {
     Promise.all([modelPromise, webCamPromise])
       .then(values => {
         console.log(values);
-        detectFrame(userVideo.current, values[0], canvasRef.current);
+        detectFrame(userVideo.current, values[0]);
       })
       .catch(error => {
         console.error(error);
@@ -146,7 +144,7 @@ const Room = props => {
     return peer;
   }
 
-  function detectFrame(video, model, canvas) {
+  function detectFrame(video, model) {
     count = (count + 1) % 120;
     console.log("count is being countee!", count);
 
@@ -154,7 +152,7 @@ const Room = props => {
       console.log("Detect Frame ");
       model.detect(video).then(predictions => {
         console.log(predictions);
-        renderPredictions(predictions, canvas);
+        renderPredictions(predictions);
       });
     }
     requestAnimationFrame(() => {
@@ -162,50 +160,56 @@ const Room = props => {
     });
   }
 
-  function renderPredictions(predictions, canvas) {
+  function renderPredictions(predictions) {
     console.log(predictions);
-    /*   const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    // Font options.
-    const font = "16px sans-serif";
-    ctx.font = font;
-    ctx.textBaseline = "top";
-    predictions.forEach(prediction => {
-      const x = prediction.bbox[0];
-      const y = prediction.bbox[1];
-      const width = prediction.bbox[2];
-      const height = prediction.bbox[3];
-      // Draw the bounding box.
-      ctx.strokeStyle = "#00FFFF";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(x, y, width, height);
-      // Draw the label background.
-      ctx.fillStyle = "#00FFFF";
-      const textWidth = ctx.measureText(prediction.class).width;
-      const textHeight = parseInt(font, 10); // base 10
-      ctx.fillRect(x, y, textWidth + 4, textHeight + 4);
-    });
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      // Font options.
+      const font = "16px sans-serif";
+      ctx.font = font;
+      ctx.textBaseline = "top";
+      predictions.forEach(prediction => {
+        const x = prediction.bbox[0];
+        const y = prediction.bbox[1];
+        const width = prediction.bbox[2];
+        const height = prediction.bbox[3];
+        // Draw the bounding box.
+        ctx.strokeStyle = "#00FFFF";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x, y, width, height);
+        // Draw the label background.
+        ctx.fillStyle = "#00FFFF";
+        const textWidth = ctx.measureText(prediction.class).width;
+        const textHeight = parseInt(font, 10); // base 10
+        ctx.fillRect(x, y, textWidth + 4, textHeight + 4);
+      });
 
-    predictions.forEach(prediction => {
-      const x = prediction.bbox[0];
-      const y = prediction.bbox[1];
-      // Draw the text last to ensure it's on top.
-      ctx.fillStyle = "#000000";
-      ctx.fillText(prediction.class, x, y);
-    });*/
+      predictions.forEach(prediction => {
+        const x = prediction.bbox[0];
+        const y = prediction.bbox[1];
+        // Draw the text last to ensure it's on top.
+        ctx.fillStyle = "#000000";
+        ctx.fillText(prediction.class, x, y);
+      });
+    }
   }
 
   return (
     <Container>
-      <StyledVideo
-        muted
-        ref={userVideo}
-        autoPlay
-        playsInline
-        width="600"
-        height="500"
-      />
-      <StyledCanvas className="size" ref={canvasRef} width="600" height="500" />
+      <div className="local">
+        <video
+          muted
+          ref={userVideo}
+          autoPlay
+          playsInline
+          width="600"
+          height="500"
+        />
+        <div className="local-detect">
+          <canvas ref={canvasRef} width="600" height="500" />
+        </div>
+      </div>
       {peers.map((peer, index) => {
         return <Video key={index} peer={peer} />;
       })}
