@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
-import Peer from "simple-peer";
-import styled from "styled-components";
+import React, { useEffect, useRef, useState } from 'react';
+import io from 'socket.io-client';
+import Peer from 'simple-peer';
+import styled from 'styled-components';
 
-import * as cocoSsd from "@tensorflow-models/coco-ssd";
-import "@tensorflow/tfjs";
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import '@tensorflow/tfjs';
 
 const Container = styled.div`
   padding: 20px;
@@ -13,12 +13,12 @@ const Container = styled.div`
   width: 90%;
   margin: auto;
   flex-wrap: wrap;
-`;
+`
 
 const StyledVideo = styled.video`
   height: 500px;
   width: 600px;
-`;
+`
 
 const StyledCanvas = styled.canvas`
   position: fixed;
@@ -26,133 +26,133 @@ const StyledCanvas = styled.canvas`
   left: 0;
   height: 500px;
   width: 600px;
-`;
+`
 
 const Video = props => {
-  const ref = useRef();
+  const ref = useRef()
 
   useEffect(() => {
-    props.peer.on("stream", stream => {
-      ref.current.srcObject = stream;
-    });
-  }, []);
+    props.peer.on('stream', stream => {
+      ref.current.srcObject = stream
+    })
+  }, [])
 
-  return <StyledVideo playsInline autoPlay ref={ref} />;
+  return <StyledVideo playsInline autoPlay ref={ref} />
 };
 
 const videoConstraints = {
   height: window.innerHeight / 2,
   width: window.innerWidth / 2
-};
+}
 
 const Room = props => {
-  const [peers, setPeers] = useState([]);
-  const socketRef = useRef();
-  const userVideo = useRef();
-  const peersRef = useRef([]);
-  const roomID = props.match.params.roomID;
-  const canvasRef = useRef();
+  const [peers, setPeers] = useState([])
+  const socketRef = useRef()
+  const userVideo = useRef()
+  const peersRef = useRef([])
+  const roomID = props.match.params.roomID
+  const canvasRef = useRef()
 
   useEffect(() => {
-    socketRef.current = io.connect("/");
+    socketRef.current = io.connect('/')
     const webCamPromise = navigator.mediaDevices
       .getUserMedia({ video: videoConstraints, audio: true })
       .then(stream => {
-        userVideo.current.srcObject = stream;
-        console.log("Got local user video");
-        socketRef.current.emit("join room", roomID);
-        socketRef.current.on("all users", users => {
-          const peers = [];
+        userVideo.current.srcObject = stream
+        console.log('Got local user video')
+        socketRef.current.emit('join room', roomID)
+        socketRef.current.on('all users', users => {
+          const peers = []
           users.forEach(userID => {
-            const peer = createPeer(userID, socketRef.current.id, stream);
+            const peer = createPeer(userID, socketRef.current.id, stream)
             peersRef.current.push({
               peerID: userID,
               peer
-            });
-            peers.push(peer);
-          });
-          setPeers(peers);
-        });
+            })
+            peers.push(peer)
+          })
+          setPeers(peers)
+        })
 
-        socketRef.current.on("user joined", payload => {
-          const peer = addPeer(payload.signal, payload.callerID, stream);
+        socketRef.current.on('user joined', payload => {
+          const peer = addPeer(payload.signal, payload.callerID, stream)
           peersRef.current.push({
             peerID: payload.callerID,
             peer
-          });
+          })
 
-          setPeers(users => [...users, peer]);
-        });
+          setPeers(users => [...users, peer])
+        })
 
-        socketRef.current.on("receiving returned signal", payload => {
-          const item = peersRef.current.find(p => p.peerID === payload.id);
-          item.peer.signal(payload.signal);
-        });
+        socketRef.current.on('receiving returned signal', payload => {
+          const item = peersRef.current.find(p => p.peerID === payload.id)
+          item.peer.signal(payload.signal)
+        })
         return new Promise((resolve, reject) => {
           userVideo.current.onloadedmetadata = () => {
-            resolve();
+            resolve()
           };
-        });
-      });
+        })
+      })
 
-    const modelPromise = cocoSsd.load();
+    const modelPromise = cocoSsd.load()
     Promise.all([modelPromise, webCamPromise])
       .then(values => {
-        console.log(values);
-        detectFrame(userVideo.current, values[0], canvasRef.current);
+        console.log(values)
+        detectFrame(userVideo.current, values[0], canvasRef.current)
       })
       .catch(error => {
-        console.error(error);
-      });
-  }, []);
+        console.error(error)
+      })
+  }, [])
 
-  function createPeer(userToSignal, callerID, stream) {
+  function createPeer (userToSignal, callerID, stream) {
     const peer = new Peer({
       initiator: true,
       trickle: false,
       stream
-    });
+    })
 
-    peer.on("signal", signal => {
-      socketRef.current.emit("sending signal", {
+    peer.on('signal', signal => {
+      socketRef.current.emit('sending signal', {
         userToSignal,
         callerID,
         signal
-      });
-    });
+      })
+    })
 
-    return peer;
+    return peer
   }
 
-  function addPeer(incomingSignal, callerID, stream) {
+  function addPeer (incomingSignal, callerID, stream) {
     const peer = new Peer({
       initiator: false,
       trickle: false,
       stream
-    });
+    })
 
-    peer.on("signal", signal => {
-      socketRef.current.emit("returning signal", { signal, callerID });
-    });
+    peer.on('signal', signal => {
+      socketRef.current.emit('returning signal', { signal, callerID })
+    })
 
-    peer.signal(incomingSignal);
+    peer.signal(incomingSignal)
 
-    return peer;
+    return peer
   }
 
-  function detectFrame(video, model, canvasRef) {
-    console.log("Detect Frame ");
+  function detectFrame (video, model, canvasRef) {
+    console.log('Detect Frame ')
     model.detect(video).then(predictions => {
-      console.log(predictions);
-      renderPredictions(predictions, canvasRef);
+      console.log(predictions)
+      renderPredictions(predictions, canvasRef)
       requestAnimationFrame(() => {
-        detectFrame(video, model);
-      });
-    });
+        detectFrame(video, model)
+      })
+    })
   }
 
-  function renderPredictions(predictions, canvasRef) {
-    console.log(predictions, canvasRef);
+  function renderPredictions (predictions, canvasRef) {
+    console.log(predictions, canvasRef)
   }
 
   return (
@@ -162,15 +162,15 @@ const Room = props => {
         ref={userVideo}
         autoPlay
         playsInline
-        width="600"
-        height="500"
+        width='600'
+        height='500'
       />
-      <StyledCanvas className="size" ref={canvasRef} width="600" height="500" />
+      <StyledCanvas className='size' ref={canvasRef} width='600' height='500' />
       {peers.map((peer, index) => {
-        return <Video key={index} peer={peer} />;
+        return <Video key={index} peer={peer} />
       })}
     </Container>
-  );
+  )
 };
 
-export default Room;
+export default Room
